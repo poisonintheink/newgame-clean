@@ -1,4 +1,6 @@
 import * as PIXI from 'pixi.js';
+import { Map } from './Map.js';
+import { Tile } from './Tile.js';
 
 export class World {
   constructor(width, height, tileSize = 32, renderer = null) {
@@ -14,8 +16,8 @@ export class World {
     // Renderer reference for render textures
     this.renderer = renderer;
 
-    // Tile data
-    this.tiles = [];
+    // Map data
+    this.map = new Map(width, height, 'grass');
 
     // PIXI container for all world objects
     this.container = new PIXI.Container();
@@ -54,15 +56,17 @@ export class World {
     this.initializeChunkSprites();
   }
 
+  get tiles() {
+    return this.map.tiles;
+  }
+
   /**
    * Generate the world with placeholder content
    */
   generate() {
-    // Initialize tile array
     for (let y = 0; y < this.heightInTiles; y++) {
-      this.tiles[y] = [];
       for (let x = 0; x < this.widthInTiles; x++) {
-        this.tiles[y][x] = this.generateTile(x, y);
+        this.map.setTile(x, y, this.generateTile(x, y));
       }
     }
 
@@ -109,9 +113,9 @@ export class World {
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist < 0.8 && this.isValidTile(x, y)) {
-          this.tiles[y][x] = 'water';
+          this.map.setTile(x, y, 'water');
         } else if (dist < 1 && this.isValidTile(x, y)) {
-          this.tiles[y][x] = 'sand';
+          this.map.setTile(x, y, 'sand');
         }
       }
     }
@@ -124,7 +128,7 @@ export class World {
     for (let y = startY; y < startY + height; y++) {
       for (let x = startX; x < startX + width; x++) {
         if (this.isValidTile(x, y) && Math.random() < 0.3) {
-          this.tiles[y][x] = 'tree';
+          this.map.setTile(x, y, 'tree');
         }
       }
     }
@@ -137,19 +141,19 @@ export class World {
     if (direction === 'horizontal') {
       for (let x = start; x < Math.min(start + length, this.widthInTiles); x++) {
         if (this.isValidTile(x, position)) {
-          this.tiles[position][x] = 'dirt';
+          this.map.setTile(x, position, 'dirt');
           // Make path wider
-          if (this.isValidTile(x, position - 1)) this.tiles[position - 1][x] = 'dirt';
-          if (this.isValidTile(x, position + 1)) this.tiles[position + 1][x] = 'dirt';
+          if (this.isValidTile(x, position - 1)) this.map.setTile(x, position - 1, 'dirt');
+          if (this.isValidTile(x, position + 1)) this.map.setTile(x, position + 1, 'dirt');
         }
       }
     } else {
       for (let y = start; y < Math.min(start + length, this.heightInTiles); y++) {
         if (this.isValidTile(position, y)) {
-          this.tiles[y][position] = 'dirt';
+          this.map.setTile(position, y, 'dirt');
           // Make path wider
-          if (this.isValidTile(position - 1, y)) this.tiles[y][position - 1] = 'dirt';
-          if (this.isValidTile(position + 1, y)) this.tiles[y][position + 1] = 'dirt';
+          if (this.isValidTile(position - 1, y)) this.map.setTile(position - 1, y, 'dirt');
+          if (this.isValidTile(position + 1, y)) this.map.setTile(position + 1, y, 'dirt');
         }
       }
     }
@@ -163,7 +167,7 @@ export class World {
     for (let y = startY; y < startY + height; y++) {
       for (let x = startX; x < startX + width; x++) {
         if (this.isValidTile(x, y)) {
-          this.tiles[y][x] = 'stone';
+          this.map.setTile(x, y, 'stone');
         }
       }
     }
@@ -183,9 +187,9 @@ export class World {
         if (this.isValidTile(x + dx, y + dy)) {
           // Walls on edges, floor inside
           if (dx === 0 || dx === width - 1 || dy === 0 || dy === height - 1) {
-            this.tiles[y + dy][x + dx] = 'wall';
+            this.map.setTile(x + dx, y + dy, 'wall');
           } else {
-            this.tiles[y + dy][x + dx] = 'stone';
+            this.map.setTile(x + dx, y + dy, 'stone');
           }
         }
       }
@@ -204,7 +208,8 @@ export class World {
    */
   getTile(x, y) {
     if (!this.isValidTile(x, y)) return null;
-    return this.tiles[y][x];
+    const tile = this.map.getTile(x, y);
+    return tile ? tile.type : null;
   }
 
   /**
@@ -212,7 +217,7 @@ export class World {
    */
   setTile(x, y, type) {
     if (!this.isValidTile(x, y)) return false;
-    this.tiles[y][x] = type;
+    this.map.setTile(x, y, type);
     const cx = Math.floor(x / this.chunkSize);
     const cy = Math.floor(y / this.chunkSize);
     this.dirtyChunks.add(`${cx},${cy}`);
@@ -223,9 +228,9 @@ export class World {
    * Check if a tile is walkable
    */
   isWalkable(x, y) {
-    const tile = this.getTile(x, y);
-    if (!tile) return false;
-    return this.tileTypes[tile].walkable;
+    const tileObj = this.map.getTile(x, y);
+    if (!tileObj) return false;
+    return this.tileTypes[tileObj.type].walkable;
   }
 
   /**
@@ -259,8 +264,8 @@ export class World {
     for (let y = startY; y < endY; y++) {
       for (let x = startX; x < endX; x++) {
 
-        const tile = this.tiles[y][x];
-        const color = this.tileTypes[tile].color;
+        const tile = this.map.getTile(x, y);
+        const color = this.tileTypes[tile.type].color;
         const px = (x - startX) * this.tileSize;
         const py = (y - startY) * this.tileSize;
         graphics.rect(px, py, this.tileSize, this.tileSize);
@@ -366,5 +371,26 @@ export class World {
       tileY: centerTileY,
       worldPos: this.tileToWorld(centerTileX, centerTileY)
     };
+  }
+
+  serialize() {
+    return this.map.serialize();
+  }
+
+  load(data) {
+    this.map.load(data);
+    this.widthInTiles = this.map.width;
+    this.heightInTiles = this.map.height;
+    this.width = this.widthInTiles * this.tileSize;
+    this.height = this.heightInTiles * this.tileSize;
+    this.widthInChunks = Math.ceil(this.widthInTiles / this.chunkSize);
+    this.heightInChunks = Math.ceil(this.heightInTiles / this.chunkSize);
+    this.chunkTextures.clear();
+    for (const sprite of this.chunkSprites.values()) {
+      sprite.destroy();
+    }
+    this.chunkSprites.clear();
+    this.dirtyChunks.clear();
+    this.initializeChunkSprites();
   }
 }
