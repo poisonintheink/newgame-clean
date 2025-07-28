@@ -11,7 +11,7 @@ export class InventorySystem {
       entity.inventory = [];
     }
     entity.inventory.push(item);
-    this.emit('itemAdded', { entity, item });
+    eventBus.emit('itemAdded', { entity, item });
   }
 
   /** Remove an item from an entity's inventory. */
@@ -20,7 +20,7 @@ export class InventorySystem {
     const idx = entity.inventory.indexOf(item);
     if (idx !== -1) {
       entity.inventory.splice(idx, 1);
-      eventBus.emit('itemAdded', { entity, item });
+      eventBus.emit('itemRemoved', { entity, item });
       return true;
     }
     return false;
@@ -30,7 +30,7 @@ export class InventorySystem {
   transferItem(fromEntity, toEntity, item) {
     if (this.removeItem(fromEntity, item)) {
       this.addItem(toEntity, item);
-      eventBus.emit('itemRemoved', { entity, item });
+      eventBus.emit('itemTransferred', { from: fromEntity, to: toEntity, item });
       return true;
     }
     return false;
