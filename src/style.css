@@ -1,0 +1,57 @@
+/* src/style.css */
+:root {
+  --bg-color: #0a0a0a;
+  --border-color: #333;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: white;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
+
+#game-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  /* Remove any borders that might cause sizing issues */
+  border: none;
+  /* Optional: add a subtle shadow instead */
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+}
+
+/* Ensure canvas has no default spacing */
+#game-container canvas {
+  display: block;
+  /* Remove any potential borders or outlines */
+  border: none;
+  outline: none;
+}
+
+/* Loading screen */
+.loading-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Error message styling */
+.error-message {
+  z-index: 1001;
+}
