@@ -4,6 +4,7 @@ import { Camera } from '../world/Camera.js';
 import { World } from '../world/World.js';
 import { Player } from '../entities/Player.js';
 import { Enemy } from '../entities/Enemy.js';
+import { UIManager } from '../ui/UIManager.js';
 
 export class GameplayState extends State {
   constructor(game) {
@@ -13,6 +14,9 @@ export class GameplayState extends State {
     this.container = new PIXI.Container();
     this.worldContainer = new PIXI.Container();
     this.uiContainer = new PIXI.Container();
+
+    // UI manager
+    this.uiManager = null;
 
     // Game objects
     this.world = null;
@@ -60,6 +64,10 @@ export class GameplayState extends State {
 
     // Create debug info
     this.createDebugInfo();
+
+    // UI manager
+    this.uiManager = new UIManager();
+    this.uiContainer.addChild(this.uiManager.container);
 
     // Structure containers
     this.container.addChild(this.worldContainer);
@@ -109,6 +117,7 @@ export class GameplayState extends State {
     this.container = null;
     this.worldContainer = null;
     this.uiContainer = null;
+    this.uiManager = null;
     this.debugText = null;
   }
 
@@ -202,6 +211,26 @@ export class GameplayState extends State {
         console.log(`Automation: ${this.player.ai.enabled ? 'ON' : 'OFF'}`);
         break;
 
+      // UI controls
+      case 'i':
+      case 'I':
+        // Toggle inventory display
+        if (this.uiManager.inventoryUI.container.visible) {
+          this.hideInventory();
+        } else {
+          this.showInventory();
+        }
+        break;
+      case 'b':
+      case 'B':
+        // Toggle battle menu
+        if (this.uiManager.battleUI.container.visible) {
+          this.hideBattleMenu();
+        } else {
+          this.showBattleMenu();
+        }
+        break;
+
       // Zoom controls
       case '+':
       case '=':
@@ -269,7 +298,7 @@ export class GameplayState extends State {
 
     // Instructions
     const instructions = new PIXI.Text({
-      text: 'WASD/Arrows: Move | F: Toggle Follow | T: Toggle Auto | +/-: Zoom | 0: Reset Zoom | Space: Shake | Tab: Debug | ESC: Menu',
+      text: 'WASD/Arrows: Move | F: Toggle Follow | T: Toggle Auto | I: Inventory | B: Battle | +/-: Zoom | 0: Reset Zoom | Space: Shake | Tab: Debug | ESC: Menu',
       style: {
         fontFamily: 'Arial',
         fontSize: 12,
@@ -324,6 +353,11 @@ export class GameplayState extends State {
         `Enemy Tile: ${this.enemy ? `${this.enemy.tileX}, ${this.enemy.tileY}` : 'N/A'}`
       ].join('\n');
     }
+
+    // Update HUD elements
+    if (this.uiManager) {
+      this.uiManager.updateHUD({ player: this.player });
+    }
   }
 
   render() {
@@ -332,5 +366,29 @@ export class GameplayState extends State {
 
   returnToMenu() {
     this.manager.changeState('menu');
+  }
+
+  showInventory() {
+    if (this.uiManager) {
+      this.uiManager.showInventory(this.player);
+    }
+  }
+
+  hideInventory() {
+    if (this.uiManager) {
+      this.uiManager.hideInventory();
+    }
+  }
+
+  showBattleMenu(options) {
+    if (this.uiManager) {
+      this.uiManager.showBattle(options);
+    }
+  }
+
+  hideBattleMenu() {
+    if (this.uiManager) {
+      this.uiManager.hideBattle();
+    }
   }
 }

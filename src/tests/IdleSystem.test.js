@@ -1,4 +1,4 @@
-import { IdleSystem } from '../src/systems/IdleSystem.js';
+import { IdleSystem } from '../systems/IdleSystem.js';
 
 const entity = { tileX: 0, tileY: 0, name: 'Dummy' };
 const idle = new IdleSystem(0.1);
