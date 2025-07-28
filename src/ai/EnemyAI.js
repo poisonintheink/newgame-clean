@@ -1,11 +1,16 @@
 import { EntityAI } from './EntityAI.js';
 import { SelectorNode, SequenceNode, ConditionNode, TaskNode } from './BehaviorTree.js';
+import { TaskSystem } from '../systems/TaskSystem.js';
+import { GoalPlanner } from './GoalPlanner.js';
 
 export class EnemyAI extends EntityAI {
   constructor(entity) {
     super(entity);
     this.enabled = true;
     this.awarenessRadius = 6;
+    this.goal = null;
+    this.taskSystem = new TaskSystem();
+    this.goalPlanner = new GoalPlanner(null);
 
     const playerDetected = new ConditionNode((e, w, { player, perception }) => {
       if (!player || !perception) return false;
@@ -46,7 +51,22 @@ export class EnemyAI extends EntityAI {
       return true;
     });
 
+    const goalTask = new TaskNode((e, w, context) => {
+      if (!this.goal) return false;
+      this.goalPlanner.world = w;
+      if (!this.taskSystem.hasTasks(e)) {
+        const tasks = this.goalPlanner.plan(e, this.goal);
+        this.taskSystem.addTasks(e, tasks);
+      }
+      this.taskSystem.update(0, w, context);
+      if (!this.taskSystem.hasTasks(e)) {
+        this.goal = null;
+      }
+      return true;
+    });
+
     this.tree = new SelectorNode([
+      goalTask,
       new SequenceNode([playerDetected, fleeTask]),
       wanderTask
     ]);
@@ -54,6 +74,11 @@ export class EnemyAI extends EntityAI {
 
   update(deltaTime, world, context = {}) {
     if (!this.enabled || !world) return;
+
+    if (this.taskSystem.hasTasks(this.entity)) {
+      this.taskSystem.update(deltaTime, world, context);
+    }
+
     this.decisionTimer += deltaTime;
     if (this.decisionTimer < this.decisionInterval) return;
     this.decisionTimer = 0;

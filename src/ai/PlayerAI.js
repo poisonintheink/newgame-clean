@@ -1,6 +1,8 @@
 import { EntityAI } from './EntityAI.js';
 import { findPath } from '../world/Pathfinder.js';
 import { SelectorNode, SequenceNode, ConditionNode, TaskNode } from './BehaviorTree.js';
+import { TaskSystem } from '../systems/TaskSystem.js';
+import { GoalPlanner } from './GoalPlanner.js';
 
 export class PlayerAI extends EntityAI {
   constructor(entity) {
@@ -10,6 +12,9 @@ export class PlayerAI extends EntityAI {
     this.visionAngle = Math.PI / 3;
     this.path = [];
     this.targetLastPos = null;
+    this.goal = null;
+    this.taskSystem = new TaskSystem();
+    this.goalPlanner = new GoalPlanner(null);
 
     const targetVisible = new ConditionNode((e, w, { target, perception }) => {
       if (!target || !perception) return false;
@@ -42,6 +47,20 @@ export class PlayerAI extends EntityAI {
       return true;
     });
 
+    const goalTask = new TaskNode((e, w, context) => {
+      if (!this.goal) return false;
+      this.goalPlanner.world = w;
+      if (!this.taskSystem.hasTasks(e)) {
+        const tasks = this.goalPlanner.plan(e, this.goal);
+        this.taskSystem.addTasks(e, tasks);
+      }
+      this.taskSystem.update(0, w, context);
+      if (!this.taskSystem.hasTasks(e)) {
+        this.goal = null;
+      }
+      return true;
+    });
+
     const wanderTask = new TaskNode((e, w) => {
       if (e.moving || e.inputQueue.length > 0) return true;
       const directions = ['up', 'down', 'left', 'right'];
@@ -57,6 +76,7 @@ export class PlayerAI extends EntityAI {
     });
 
     this.tree = new SelectorNode([
+      goalTask,
       new SequenceNode([targetVisible, chaseTask]),
       wanderTask
     ]);
@@ -64,6 +84,11 @@ export class PlayerAI extends EntityAI {
 
   update(deltaTime, world, context = {}) {
     if (!this.enabled || !world) return;
+
+    if (this.taskSystem.hasTasks(this.entity)) {
+      this.taskSystem.update(deltaTime, world, context);
+    }
+
     this.decisionTimer += deltaTime;
     if (this.decisionTimer < this.decisionInterval) return;
     this.decisionTimer = 0;
