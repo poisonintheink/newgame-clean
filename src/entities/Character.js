@@ -113,12 +113,14 @@ export class Character extends Entity {
         break;
     }
 
+    const wrapped = world.wrapCoords(newTileX, newTileY);
+
     // Check if new position is walkable
-    if (world.isWalkable(newTileX, newTileY) && !world.isOccupied(newTileX, newTileY, this)) {
+    if (world.isWalkable(wrapped.x, wrapped.y) && !world.isOccupied(wrapped.x, wrapped.y, this)) {
       this.moving = true;
       this.moveProgress = 0;
       this.moveFrom = { x: this.tileX, y: this.tileY };
-      this.moveTo = { x: newTileX, y: newTileY };
+      this.moveTo = { x: wrapped.x, y: wrapped.y };
     }
   }
 

@@ -145,15 +145,10 @@ export class Camera extends EventEmitter {
       );
     }
 
-    // Apply bounds with padding
-    this.targetX = Math.max(
-      -this.boundsPadding,
-      Math.min(this.worldWidth - this.viewportWidth + this.boundsPadding, this.targetX)
-    );
-    this.targetY = Math.max(
-      -this.boundsPadding,
-      Math.min(this.worldHeight - this.viewportHeight + this.boundsPadding, this.targetY)
-    );
+    // Wrap camera position to world bounds
+    const wrap = (v, max) => ((v % max) + max) % max;
+    this.targetX = wrap(this.targetX, this.worldWidth);
+    this.targetY = wrap(this.targetY, this.worldHeight);
 
     // Smooth camera movement
     const dx = this.targetX - this.x;

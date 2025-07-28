@@ -338,11 +338,21 @@ export class World {
   }
 
   /**
+ * Wrap coordinates around world edges
+ */
+  wrapCoords(x, y) {
+    return {
+      x: (x + this.widthInTiles) % this.widthInTiles,
+      y: (y + this.heightInTiles) % this.heightInTiles,
+    };
+  }
+
+  /**
    * Get tile at specific coordinates
    */
   getTile(x, y) {
-    if (!this.isValidTile(x, y)) return null;
-    const tile = this.map.getTile(x, y);
+    const { x: tx, y: ty } = this.wrapCoords(x, y);
+    const tile = this.map.getTile(tx, ty);
     return tile ? tile.type : null;
   }
 
@@ -350,10 +360,10 @@ export class World {
    * Set tile at specific coordinates
    */
   setTile(x, y, type) {
-    if (!this.isValidTile(x, y)) return false;
-    this.map.setTile(x, y, type);
-    const cx = Math.floor(x / this.chunkSize);
-    const cy = Math.floor(y / this.chunkSize);
+    const { x: tx, y: ty } = this.wrapCoords(x, y);
+    this.map.setTile(tx, ty, type);
+    const cx = Math.floor(tx / this.chunkSize);
+    const cy = Math.floor(ty / this.chunkSize);
     this.dirtyChunks.add(`${cx},${cy}`);
     return true;
   }
@@ -362,7 +372,8 @@ export class World {
    * Check if a tile is walkable
    */
   isWalkable(x, y) {
-    const tileObj = this.map.getTile(x, y);
+    const { x: tx, y: ty } = this.wrapCoords(x, y);
+    const tileObj = this.map.getTile(tx, ty);
     if (!tileObj) return false;
     return this.tileTypes[tileObj.type].walkable;
   }
@@ -466,9 +477,10 @@ export class World {
    * Get world pixel coordinates from tile coordinates
    */
   tileToWorld(tileX, tileY) {
+    const { x, y } = this.wrapCoords(tileX, tileY);
     return {
-      x: tileX * this.tileSize + this.tileSize / 2,
-      y: tileY * this.tileSize + this.tileSize / 2
+      x: x * this.tileSize + this.tileSize / 2,
+      y: y * this.tileSize + this.tileSize / 2,
     };
   }
 
@@ -476,10 +488,9 @@ export class World {
    * Get tile coordinates from world pixel coordinates
    */
   worldToTile(worldX, worldY) {
-    return {
-      x: Math.floor(worldX / this.tileSize),
-      y: Math.floor(worldY / this.tileSize)
-    };
+    const x = Math.floor(worldX / this.tileSize);
+    const y = Math.floor(worldY / this.tileSize);
+    return this.wrapCoords(x, y);
   }
 
   /**
