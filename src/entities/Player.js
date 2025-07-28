@@ -1,8 +1,8 @@
 import * as PIXI from 'pixi.js';
 import { PlayerAI } from '../ai/PlayerAI.js';
-import { Entity } from './Entity.js';
+import { Character } from './Character.js';
 
-export class Player extends Entity {
+export class Player extends Character {
   constructor(tileX = 0, tileY = 0, tileSize = 32) {
 
     super(tileX, tileY, tileSize);
