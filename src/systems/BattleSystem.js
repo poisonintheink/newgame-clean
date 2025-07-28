@@ -5,7 +5,6 @@ import { eventBus } from '../core/EventBus.js';
  */
 export class BattleSystem {
   constructor() {
-    super();
     this.pairs = new Set(); // { attacker, defender }
   }
 
