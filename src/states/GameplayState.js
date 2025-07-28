@@ -484,10 +484,12 @@ export class GameplayState extends State {
     // Apply camera transform to world container
     const offset = this.camera.getOffset();
 
-    // Simple zoom implementation that keeps (0,0) at top-left
+    // Simple zoom implementation that keeps (0,0) at top-left    // Compute screen center so scaling occurs around it
+    const cx = this.game.app.screen.width / 2;
+    const cy = this.game.app.screen.height / 2;
     this.worldContainer.scale.set(this.camera.zoom);
-    this.worldContainer.x = offset.x * this.camera.zoom;
-    this.worldContainer.y = offset.y * this.camera.zoom;
+    this.worldContainer.x = offset.x * this.camera.zoom + cx * (1 - this.camera.zoom);
+    this.worldContainer.y = offset.y * this.camera.zoom + cy * (1 - this.camera.zoom);
 
     // Update debug info
     if (this.showDebug && this.debugText) {
