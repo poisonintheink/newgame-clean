@@ -4,16 +4,11 @@ import { Character } from './Character.js';
 
 export class Player extends Character {
   constructor(tileX = 0, tileY = 0, tileSize = 32) {
-
     super(tileX, tileY, tileSize);
 
-    // Movement properties
-    this.moveSpeed = 4; // tiles per second
-    this.moving = false;
-    this.moveProgress = 0;
-    this.moveFrom = { x: this.tileX, y: this.tileY };
-    this.moveTo = { x: this.tileX, y: this.tileY };
-
+    // Player-specific properties
+    this.moveSpeed = 4; // Can override Character default
+    
     // Visual properties
     this.width = 24;
     this.height = 24;
@@ -21,15 +16,11 @@ export class Player extends Character {
 
     // PIXI display object
     this.sprite = this.createSprite();
-
-    // Input queue
-    this.inputQueue = [];
-    this.lastInputTime = 0;
-    this.inputCooldown = 0.15; // seconds between moves
+    this.sprite.x = this.x;
+    this.sprite.y = this.y;
 
     // Animation properties
     this.animationTime = 0;
-    this.facing = 'down'; // up, down, left, right
 
     // Simple automation controller
     this.ai = new PlayerAI(this);
@@ -51,7 +42,7 @@ export class Player extends Character {
     indicator.moveTo(0, 0);
     indicator.lineTo(this.width / 3, 0);
     indicator.stroke({ width: 3, color: 0xffffff });
-    indicator.label = 'indicator';  // Changed from 'name' to 'label' for PIXI v8
+    indicator.label = 'indicator';
 
     container.addChild(body);
     container.addChild(indicator);
@@ -60,64 +51,17 @@ export class Player extends Character {
   }
 
   /**
-   * Queue a movement input
-   */
-  queueInput(direction) {
-    if (this.inputQueue.length < 2) { // Limit queue size
-      this.inputQueue.push(direction);
-    }
-  }
-
-  /**
    * Update player state
    */
   update(deltaTime, world, context = {}) {
     this.animationTime += deltaTime;
+    
     if (this.ai) {
       this.ai.update(deltaTime, world, context);
     }
 
-    // Handle movement
-    if (this.moving) {
-      // Continue current movement
-      this.moveProgress += deltaTime * this.moveSpeed;
-
-      if (this.moveProgress >= 1) {
-        // Movement complete
-        this.tileX = this.moveTo.x;
-        this.tileY = this.moveTo.y;
-        this.x = this.tileX * this.tileSize + this.tileSize / 2;
-        this.y = this.tileY * this.tileSize + this.tileSize / 2;
-        this.moving = false;
-        this.moveProgress = 0;
-        this.lastInputTime = 0; // Reset input timer
-      } else {
-        // Interpolate position
-        const t = this.easeInOut(this.moveProgress);
-        this.x = this.lerp(
-          this.moveFrom.x * this.tileSize + this.tileSize / 2,
-          this.moveTo.x * this.tileSize + this.tileSize / 2,
-          t
-        );
-        this.y = this.lerp(
-          this.moveFrom.y * this.tileSize + this.tileSize / 2,
-          this.moveTo.y * this.tileSize + this.tileSize / 2,
-          t
-        );
-      }
-    } else {
-      // Check for queued input
-      this.lastInputTime += deltaTime;
-
-      if (this.inputQueue.length > 0 && this.lastInputTime >= this.inputCooldown) {
-        const direction = this.inputQueue.shift();
-        this.tryMove(direction, world);
-      }
-    }
-
-    // Update sprite position
-    this.sprite.x = this.x;
-    this.sprite.y = this.y;
+    // Call parent update for common movement logic
+    super.update(deltaTime, world, context);
 
     // Update direction indicator
     this.updateDirectionIndicator();
@@ -127,47 +71,10 @@ export class Player extends Character {
   }
 
   /**
-   * Try to move in a direction
-   */
-  tryMove(direction, world) {
-    if (this.moving) return;
-
-    let newTileX = this.tileX;
-    let newTileY = this.tileY;
-
-    switch (direction) {
-      case 'up':
-        newTileY -= 1;
-        this.facing = 'up';
-        break;
-      case 'down':
-        newTileY += 1;
-        this.facing = 'down';
-        break;
-      case 'left':
-        newTileX -= 1;
-        this.facing = 'left';
-        break;
-      case 'right':
-        newTileX += 1;
-        this.facing = 'right';
-        break;
-    }
-
-    // Check if new position is walkable
-    if (world.isWalkable(newTileX, newTileY)) {
-      this.moving = true;
-      this.moveProgress = 0;
-      this.moveFrom = { x: this.tileX, y: this.tileY };
-      this.moveTo = { x: newTileX, y: newTileY };
-    }
-  }
-
-  /**
    * Update direction indicator rotation
    */
   updateDirectionIndicator() {
-    const indicator = this.sprite.getChildByLabel('indicator');  // Changed from getChildByName
+    const indicator = this.sprite.getChildByLabel('indicator');
     if (indicator) {
       switch (this.facing) {
         case 'up':
@@ -199,22 +106,6 @@ export class Player extends Character {
       const breathScale = 1 + Math.sin(this.animationTime * 2) * 0.02;
       this.sprite.scale.set(breathScale);
     }
-  }
-
-  /**
-   * Linear interpolation
-   */
-  lerp(start, end, t) {
-    return start + (end - start) * t;
-  }
-
-  /**
-   * Ease in-out function for smooth movement
-   */
-  easeInOut(t) {
-    return t < 0.5
-      ? 2 * t * t
-      : -1 + (4 - 2 * t) * t;
   }
 
   /**

@@ -6,6 +6,7 @@ import { eventBus } from '../core/EventBus.js';
 export class BattleSystem {
   constructor() {
     this.pairs = new Set(); // { attacker, defender }
+    this.battleCooldowns = new WeakMap(); // Prevent attack spam
   }
 
   /** Register a pair of combatants to monitor. */
@@ -26,16 +27,28 @@ export class BattleSystem {
 
   /**
    * Update all engagements and perform attacks if combatants are adjacent.
-   * @param {number} deltaTime - Seconds since last update (unused for now).
+   * @param {number} deltaTime - Seconds since last update.
    */
   update(deltaTime) {
+    // Update cooldowns
+    for (const pair of this.pairs) {
+      const cd = this.battleCooldowns.get(pair) || 0;
+      if (cd > 0) {
+        this.battleCooldowns.set(pair, cd - deltaTime);
+      }
+    }
+
+    // Check for battles
     for (const pair of this.pairs) {
       const { attacker, defender } = pair;
       if (!attacker || !defender || defender.hitPoints <= 0) continue;
 
       const dist = Math.abs(attacker.tileX - defender.tileX) + Math.abs(attacker.tileY - defender.tileY);
-      if (dist <= 1) {
+      const cooldown = this.battleCooldowns.get(pair) || 0;
+      
+      if (dist <= 1 && cooldown <= 0) {
         this.attack(attacker, defender);
+        this.battleCooldowns.set(pair, 1.0); // 1 second between attacks
       }
     }
   }
@@ -45,11 +58,20 @@ export class BattleSystem {
     const atk = attacker.stats?.strength || 0;
     const def = defender.stats?.defense || 0;
     const dmg = Math.max(1, atk - Math.floor(def / 2));
-    defender.hitPoints -= dmg;
+    
+    defender.hitPoints = Math.max(0, defender.hitPoints - dmg);
+    
     eventBus.emit('attack', { attacker, defender, damage: dmg });
+    
     if (defender.hitPoints <= 0) {
-      defender.hitPoints = 0;
       eventBus.emit('defeated', { attacker, defender });
+      this.disengage(attacker, defender);
     }
+  }
+
+  /** Clear all battle pairs */
+  clear() {
+    this.pairs.clear();
+    this.battleCooldowns = new WeakMap();
   }
 }

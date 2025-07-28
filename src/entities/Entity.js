@@ -1,5 +1,7 @@
 export class Entity {
   constructor(tileX = 0, tileY = 0, tileSize = 32) {
+    this.id = null; // Will be set by EntityRegistry
+    this.type = this.constructor.name.toLowerCase(); // 'player', 'enemy', etc.
     this.tileX = tileX;
     this.tileY = tileY;
     this.tileSize = tileSize;
@@ -28,5 +30,15 @@ export class Entity {
    */
   getWorldPosition() {
     return { x: this.x, y: this.y };
+  }
+
+  /**
+   * Clean up method for proper removal
+   */
+  destroy() {
+    if (this.sprite) {
+      this.sprite.destroy();
+      this.sprite = null;
+    }
   }
 }

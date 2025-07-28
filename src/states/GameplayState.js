@@ -8,6 +8,11 @@ import { UIManager } from '../ui/UIManager.js';
 import { PerceptionSystem } from '../systems/PerceptionSystem.js';
 import { VisionSense } from '../systems/senses/VisionSense.js';
 import { SmellSense } from '../systems/senses/SmellSense.js';
+import { MovementSystem } from '../systems/MovementSystem.js';
+import { BattleSystem } from '../systems/BattleSystem.js';
+import { IdleSystem } from '../systems/IdleSystem.js';
+import { InventorySystem } from '../systems/InventorySystem.js';
+import { eventBus } from '../core/EventBus.js';
 
 export class GameplayState extends State {
   constructor(game) {
@@ -34,8 +39,17 @@ export class GameplayState extends State {
     this.debugText = null;
     this.showDebug = true;
 
-    // Perception system
-    this.perception = null;
+    // Systems object for organized access
+    this.systems = {
+      movement: null,
+      battle: null,
+      idle: null,
+      inventory: null,
+      perception: null
+    };
+
+    // Entity tracking
+    this.entities = new Map();
   }
 
   async enter(params = {}) {
@@ -52,26 +66,43 @@ export class GameplayState extends State {
       this.world.height
     );
 
+    // Initialize systems
+    this.systems.movement = new MovementSystem();
+    this.systems.battle = new BattleSystem();
+    this.systems.idle = new IdleSystem(5); // 5 seconds to idle
+    this.systems.inventory = new InventorySystem();
+    
+    // Set up perception system
+    this.systems.perception = new PerceptionSystem();
+    this.systems.perception.registerSense('vision', new VisionSense());
+    this.systems.perception.registerSense('smell', new SmellSense());
+
     // Create player at random walkable position
     const startPos = this.world.getRandomWalkablePosition();
     this.player = new Player(startPos.tileX, startPos.tileY, this.world.tileSize);
+    this.player.id = 'player'; // Special ID for player
 
     // Create enemy at random walkable position
     const enemyPos = this.world.getRandomWalkablePosition();
     this.enemy = new Enemy(enemyPos.tileX, enemyPos.tileY, this.world.tileSize);
+    this.enemy.id = 'enemy-1';
 
-    // Set up perception system
-    this.perception = new PerceptionSystem();
-    this.perception.registerSense('vision', new VisionSense());
-    this.perception.registerSense('smell', new SmellSense());
+    // Register entities
+    this.entities.set(this.player.id, this.player);
+    this.entities.set(this.enemy.id, this.enemy);
+
+    // Add entities to world
+    this.world.addEntity(this.player);
+    this.world.addEntity(this.enemy);
+
+    // Add entities to systems
+    this.systems.movement.addEntity(this.player);
+    this.systems.movement.addEntity(this.enemy);
+    this.systems.idle.addEntity(this.player);
+    this.systems.battle.engage(this.player, this.enemy);
 
     // Camera follows player
     this.camera.follow(this.player, true);
-
-    // Add world and player to containers
-    this.worldContainer.addChild(this.world.container);
-    this.worldContainer.addChild(this.player.sprite);
-    this.worldContainer.addChild(this.enemy.sprite);
 
     // Create debug info
     this.createDebugInfo();
@@ -90,6 +121,9 @@ export class GameplayState extends State {
     // Set up input handlers
     this.setupInput();
 
+    // Set up event listeners
+    this.setupEventListeners();
+
     // Handle mouse wheel zoom
     this.handleWheel = (e) => this.onWheel(e);
     window.addEventListener('wheel', this.handleWheel, { passive: false });
@@ -104,11 +138,21 @@ export class GameplayState extends State {
   }
 
   async exit() {
+    // Clean up event listeners FIRST
+    this.cleanupEventListeners();
+    
     // Clean up input handlers
     this.cleanupInput();
-
-    // Remove wheel listener
     window.removeEventListener('wheel', this.handleWheel);
+
+    // Clean up entities
+    for (const entity of this.entities.values()) {
+      entity.destroy();
+    }
+    this.entities.clear();
+
+    // Clear systems
+    this.systems.battle.clear();
 
     // Remove from stage
     this.game.app.stage.removeChild(this.container);
@@ -130,7 +174,98 @@ export class GameplayState extends State {
     this.uiContainer = null;
     this.uiManager = null;
     this.debugText = null;
-    this.perception = null;
+    this.systems = {
+      movement: null,
+      battle: null,
+      idle: null,
+      inventory: null,
+      perception: null
+    };
+  }
+
+  setupEventListeners() {
+    // Movement events
+    this.onEntityMove = this.onEntityMove.bind(this);
+    eventBus.on('move', this.onEntityMove);
+    
+    // Battle events
+    this.onAttack = this.onAttack.bind(this);
+    this.onDefeated = this.onDefeated.bind(this);
+    eventBus.on('attack', this.onAttack);
+    eventBus.on('defeated', this.onDefeated);
+    
+    // Idle events
+    this.onEntityIdle = this.onEntityIdle.bind(this);
+    eventBus.on('idle', this.onEntityIdle);
+    
+    // Item events
+    this.onItemAdded = this.onItemAdded.bind(this);
+    this.onItemRemoved = this.onItemRemoved.bind(this);
+    eventBus.on('itemAdded', this.onItemAdded);
+    eventBus.on('itemRemoved', this.onItemRemoved);
+  }
+
+  cleanupEventListeners() {
+    eventBus.off('move', this.onEntityMove);
+    eventBus.off('attack', this.onAttack);
+    eventBus.off('defeated', this.onDefeated);
+    eventBus.off('idle', this.onEntityIdle);
+    eventBus.off('itemAdded', this.onItemAdded);
+    eventBus.off('itemRemoved', this.onItemRemoved);
+  }
+
+  onEntityMove({ entity, from, to }) {
+    // Check for collision with items, triggers, etc.
+    console.log(`${entity.type} moved from ${from.x},${from.y} to ${to.x},${to.y}`);
+  }
+
+  onAttack({ attacker, defender, damage }) {
+    console.log(`${attacker.type} attacks ${defender.type} for ${damage} damage!`);
+    // Could show damage numbers, effects, etc.
+  }
+
+  onDefeated({ attacker, defender }) {
+    console.log(`${defender.type} was defeated by ${attacker.type}!`);
+    
+    // Handle drops
+    if (defender.drops) {
+      defender.drops.forEach(dropId => {
+        // Create item at defender's position
+        console.log(`${defender.type} dropped ${dropId}`);
+      });
+    }
+    
+    // Remove defeated entity
+    this.removeEntity(defender);
+  }
+
+  onEntityIdle({ entity, idleTime }) {
+    console.log(`${entity.type} has been idle for ${idleTime.toFixed(1)} seconds`);
+    // Could grant idle rewards, trigger animations, etc.
+  }
+
+  onItemAdded({ entity, item }) {
+    console.log(`${entity.type} picked up ${item.name || item}`);
+  }
+
+  onItemRemoved({ entity, item }) {
+    console.log(`${entity.type} lost ${item.name || item}`);
+  }
+
+  removeEntity(entity) {
+    // Remove from all systems
+    this.systems.movement.removeEntity(entity);
+    this.systems.idle.removeEntity(entity);
+    this.systems.battle.disengage(null, entity);
+    
+    // Remove from world
+    this.world.removeEntity(entity);
+    
+    // Remove from tracking
+    this.entities.delete(entity.id);
+    
+    // Clean up entity
+    entity.destroy();
   }
 
   setupInput() {
@@ -315,7 +450,7 @@ export class GameplayState extends State {
         fontFamily: 'Arial',
         fontSize: 12,
         fill: 0xcccccc,
-        stroke: { color: 0x000000, width: 3 }  // Updated to PIXI v8 syntax
+        stroke: { color: 0x000000, width: 3 }
       }
     });
     instructions.x = 10;
@@ -328,18 +463,14 @@ export class GameplayState extends State {
   update(deltaTime) {
     if (!this.world || !this.camera || !this.player) return;
 
-    // Update player and enemy AI
-    if (this.enemy) {
-      this.enemy.update(deltaTime, this.world, {
-        player: this.player,
-        perception: this.perception
-      });
-    }
-
-    this.player.update(deltaTime, this.world, {
-      target: this.enemy,
-      perception: this.perception
+    // Update systems
+    this.systems.movement.update(deltaTime, this.world, {
+      player: this.player,
+      perception: this.systems.perception
     });
+    
+    this.systems.battle.update(deltaTime);
+    this.systems.idle.update(deltaTime);
 
     // Update camera
     this.camera.update(deltaTime);
@@ -368,7 +499,9 @@ export class GameplayState extends State {
         `Following: ${this.isFollowingPlayer ? 'Yes' : 'No'}`,
         `Moving: ${this.player.moving}`,
         `Automation: ${this.player.ai.enabled ? 'On' : 'Off'}`,
-        `Enemy Tile: ${this.enemy ? `${this.enemy.tileX}, ${this.enemy.tileY}` : 'N/A'}`
+        `Enemy Tile: ${this.enemy ? `${this.enemy.tileX}, ${this.enemy.tileY}` : 'N/A'}`,
+        `Player HP: ${this.player.hitPoints}/${this.player.maxHitPoints}`,
+        `Enemy HP: ${this.enemy ? `${this.enemy.hitPoints}/${this.enemy.maxHitPoints}` : 'N/A'}`
       ].join('\n');
     }
 

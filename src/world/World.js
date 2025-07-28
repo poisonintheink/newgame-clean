@@ -53,6 +53,75 @@ export class World {
 
     // Initialize chunk sprites
     this.initializeChunkSprites();
+
+    // Add entity management
+    this.entities = new Set();
+  }
+
+  /**
+ * Add an entity to the world
+ */
+  addEntity(entity) {
+    this.entities.add(entity);
+    if (entity.sprite) {
+      this.entityContainer.addChild(entity.sprite);
+    }
+  }
+
+  /**
+   * Remove an entity from the world
+   */
+  removeEntity(entity) {
+    this.entities.delete(entity);
+    if (entity.sprite && entity.sprite.parent === this.entityContainer) {
+      this.entityContainer.removeChild(entity.sprite);
+    }
+  }
+
+  /**
+   * Get all entities at a specific tile position
+   */
+  getEntitiesAt(tileX, tileY) {
+    return Array.from(this.entities).filter(e =>
+      e.tileX === tileX && e.tileY === tileY
+    );
+  }
+
+  /**
+   * Check if a tile is occupied by an entity
+   */
+  isOccupied(tileX, tileY, excludeEntity = null) {
+    if (!this.isWalkable(tileX, tileY)) return true;
+
+    for (const entity of this.entities) {
+      if (entity !== excludeEntity &&
+        entity.tileX === tileX &&
+        entity.tileY === tileY) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Get all entities within a radius of a position
+   */
+  getEntitiesInRadius(tileX, tileY, radius) {
+    return Array.from(this.entities).filter(e => {
+      const dx = e.tileX - tileX;
+      const dy = e.tileY - tileY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      return dist <= radius;
+    });
+  }
+
+  /**
+   * Clear all entities from the world
+   */
+  clearEntities() {
+    for (const entity of this.entities) {
+      this.removeEntity(entity);
+    }
   }
 
   get tiles() {
