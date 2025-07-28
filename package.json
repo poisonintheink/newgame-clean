@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node tests/IdleSystem.test.js"
+    "test": "node src/tests/IdleSystem.test.js"
   },
   "devDependencies": {
     "vite": "^7.0.4"
