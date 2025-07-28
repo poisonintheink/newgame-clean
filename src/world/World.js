@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { Map } from './Map.js';
-import { Tile } from './Tile.js';
+import { Map as TileMap } from './Map.js';
 
 export class World {
   constructor(width, height, tileSize = 32, renderer = null) {
@@ -17,7 +17,7 @@ export class World {
     this.renderer = renderer;
 
     // Map data
-    this.map = new Map(width, height, 'grass');
+    this.map = new TileMap(width, height, 'grass');
 
     // PIXI container for all world objects
     this.container = new PIXI.Container();
