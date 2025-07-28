@@ -1,17 +1,11 @@
 import * as PIXI from 'pixi.js';
 import { PlayerAI } from '../ai/PlayerAI.js';
-import { Character } from './Character.js';
+import { Entity } from './Entity.js';
 
-export class Player {
+export class Player extends Entity {
   constructor(tileX = 0, tileY = 0, tileSize = 32) {
-    // Position in tile coordinates
-    this.tileX = tileX;
-    this.tileY = tileY;
-    this.tileSize = tileSize;
 
-    // Position in world coordinates (center of tile)
-    this.x = tileX * tileSize + tileSize / 2;
-    this.y = tileY * tileSize + tileSize / 2;
+    super(tileX, tileY, tileSize);
 
     // Movement properties
     this.moveSpeed = 4; // tiles per second
@@ -224,22 +218,10 @@ export class Player {
   }
 
   /**
-   * Get current world position
-   */
-  getWorldPosition() {
-    return { x: this.x, y: this.y };
-  }
-
-  /**
    * Set position in tiles
    */
   setTilePosition(tileX, tileY) {
-    this.tileX = tileX;
-    this.tileY = tileY;
-    this.x = tileX * this.tileSize + this.tileSize / 2;
-    this.y = tileY * this.tileSize + this.tileSize / 2;
-    this.sprite.x = this.x;
-    this.sprite.y = this.y;
+    super.setTilePosition(tileX, tileY);
     this.moving = false;
     this.moveProgress = 0;
   }

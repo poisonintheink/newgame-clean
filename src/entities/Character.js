@@ -1,12 +1,8 @@
-export class Character {
-  constructor(tileX = 0, tileY = 0, tileSize = 32) {
-    this.tileX = tileX;
-    this.tileY = tileY;
-    this.tileSize = tileSize;
+import { Entity } from './Entity.js';
 
-    // World position (center of tile)
-    this.x = tileX * tileSize + tileSize / 2;
-    this.y = tileY * tileSize + tileSize / 2;
+export class Character extends Entity {
+  constructor(tileX = 0, tileY = 0, tileSize = 32) {
+    super(tileX, tileY, tileSize);
 
     // Basic RPG properties
     this.hitPoints = 100;
@@ -18,26 +14,5 @@ export class Character {
 
     // Inventory placeholder (array of item references)
     this.inventory = [];
-  }
-
-  /**
-   * Set tile based position and update world coordinates
-   */
-  setTilePosition(tileX, tileY) {
-    this.tileX = tileX;
-    this.tileY = tileY;
-    this.x = tileX * this.tileSize + this.tileSize / 2;
-    this.y = tileY * this.tileSize + this.tileSize / 2;
-    if (this.sprite) {
-      this.sprite.x = this.x;
-      this.sprite.y = this.y;
-    }
-  }
-
-  /**
-   * Get current world position
-   */
-  getWorldPosition() {
-    return { x: this.x, y: this.y };
   }
 }
