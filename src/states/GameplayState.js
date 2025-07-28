@@ -58,6 +58,8 @@ export class GameplayState extends State {
     // Create world (100x100 tiles, 32px per tile = 3200x3200 pixel world)
     this.world = new World(100, 100, 32, app.renderer);
 
+    this.worldContainer.addChild(this.world.container);
+
     // Create camera
     this.camera = new Camera(
       app.screen.width,
@@ -71,7 +73,7 @@ export class GameplayState extends State {
     this.systems.battle = new BattleSystem();
     this.systems.idle = new IdleSystem(5); // 5 seconds to idle
     this.systems.inventory = new InventorySystem();
-    
+
     // Set up perception system
     this.systems.perception = new PerceptionSystem();
     this.systems.perception.registerSense('vision', new VisionSense());
@@ -140,7 +142,7 @@ export class GameplayState extends State {
   async exit() {
     // Clean up event listeners FIRST
     this.cleanupEventListeners();
-    
+
     // Clean up input handlers
     this.cleanupInput();
     window.removeEventListener('wheel', this.handleWheel);
@@ -187,17 +189,17 @@ export class GameplayState extends State {
     // Movement events
     this.onEntityMove = this.onEntityMove.bind(this);
     eventBus.on('move', this.onEntityMove);
-    
+
     // Battle events
     this.onAttack = this.onAttack.bind(this);
     this.onDefeated = this.onDefeated.bind(this);
     eventBus.on('attack', this.onAttack);
     eventBus.on('defeated', this.onDefeated);
-    
+
     // Idle events
     this.onEntityIdle = this.onEntityIdle.bind(this);
     eventBus.on('idle', this.onEntityIdle);
-    
+
     // Item events
     this.onItemAdded = this.onItemAdded.bind(this);
     this.onItemRemoved = this.onItemRemoved.bind(this);
@@ -226,7 +228,7 @@ export class GameplayState extends State {
 
   onDefeated({ attacker, defender }) {
     console.log(`${defender.type} was defeated by ${attacker.type}!`);
-    
+
     // Handle drops
     if (defender.drops) {
       defender.drops.forEach(dropId => {
@@ -234,7 +236,7 @@ export class GameplayState extends State {
         console.log(`${defender.type} dropped ${dropId}`);
       });
     }
-    
+
     // Remove defeated entity
     this.removeEntity(defender);
   }
@@ -257,13 +259,13 @@ export class GameplayState extends State {
     this.systems.movement.removeEntity(entity);
     this.systems.idle.removeEntity(entity);
     this.systems.battle.disengage(null, entity);
-    
+
     // Remove from world
     this.world.removeEntity(entity);
-    
+
     // Remove from tracking
     this.entities.delete(entity.id);
-    
+
     // Clean up entity
     entity.destroy();
   }
@@ -468,7 +470,7 @@ export class GameplayState extends State {
       player: this.player,
       perception: this.systems.perception
     });
-    
+
     this.systems.battle.update(deltaTime);
     this.systems.idle.update(deltaTime);
 
