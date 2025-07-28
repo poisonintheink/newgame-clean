@@ -1,4 +1,4 @@
-import { EventEmitter } from '../core/EventEmitter.js';
+import { eventBus } from '../core/EventBus.js';
 
 /**
  * Tracks entity movement and emits an `idle` event when an entity
@@ -7,18 +7,17 @@ import { EventEmitter } from '../core/EventEmitter.js';
  * Example usage:
  * ```javascript
  * const idle = new IdleSystem(3);
- * idle.on('idle', ({ entity }) => console.log(`${entity.name} idle`));
+ * eventBus.on('idle', ({ entity }) => console.log(`${entity.name} idle`));
  * idle.addEntity(player);
  * // in your game loop:
  * idle.update(deltaTime);
  * ```
  */
-export class IdleSystem extends EventEmitter {
+export class IdleSystem {
   /**
    * @param {number} idleTime Seconds of inactivity before emitting `idle`.
    */
   constructor(idleTime = 5) {
-    super();
     this.idleTime = idleTime;
     this.entities = new Set();
     this.lastPositions = new WeakMap();
@@ -59,7 +58,7 @@ export class IdleSystem extends EventEmitter {
         const time = (this.timers.get(entity) || 0) + deltaTime;
         this.timers.set(entity, time);
         if (time >= this.idleTime && !this.idleFlags.get(entity)) {
-          this.emit('idle', { entity, idleTime: time });
+          eventBus.emit('idle', { entity, idleTime: time });
           this.idleFlags.set(entity, true);
         }
       }

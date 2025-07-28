@@ -1,9 +1,9 @@
-import { EventEmitter } from '../core/EventEmitter.js';
+import { eventBus } from '../core/EventBus.js';
 
 /**
  * Simple battle manager that resolves attacks when combatants are adjacent.
  */
-export class BattleSystem extends EventEmitter {
+export class BattleSystem {
   constructor() {
     super();
     this.pairs = new Set(); // { attacker, defender }
@@ -47,10 +47,10 @@ export class BattleSystem extends EventEmitter {
     const def = defender.stats?.defense || 0;
     const dmg = Math.max(1, atk - Math.floor(def / 2));
     defender.hitPoints -= dmg;
-    this.emit('attack', { attacker, defender, damage: dmg });
+    eventBus.emit('attack', { attacker, defender, damage: dmg });
     if (defender.hitPoints <= 0) {
       defender.hitPoints = 0;
-      this.emit('defeated', { attacker, defender });
+      eventBus.emit('defeated', { attacker, defender });
     }
   }
 }

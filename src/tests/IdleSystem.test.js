@@ -1,10 +1,11 @@
 import { IdleSystem } from '../systems/IdleSystem.js';
+import { eventBus } from '../core/EventBus.js';
 
 const entity = { tileX: 0, tileY: 0, name: 'Dummy' };
 const idle = new IdleSystem(0.1);
 let fired = false;
 
-idle.on('idle', ({ entity: e }) => {
+eventBus.on('idle', ({ entity: e }) => {
   if (e === entity) fired = true;
 });
 
@@ -25,3 +26,4 @@ idle.update(0.1);
 if (!fired) throw new Error('idle did not fire again after movement');
 
 console.log('IdleSystem basic test passed');
+eventBus.removeAllListeners('idle');

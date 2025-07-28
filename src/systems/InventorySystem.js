@@ -1,9 +1,9 @@
-import { EventEmitter } from '../core/EventEmitter.js';
+import { eventBus } from '../core/EventBus.js';
 
 /**
  * Manages entity inventories and dispatches events when they change.
  */
-export class InventorySystem extends EventEmitter {
+export class InventorySystem {
   /** Add an item to an entity's inventory. */
   addItem(entity, item) {
     if (!entity || !item) return;
@@ -20,7 +20,7 @@ export class InventorySystem extends EventEmitter {
     const idx = entity.inventory.indexOf(item);
     if (idx !== -1) {
       entity.inventory.splice(idx, 1);
-      this.emit('itemRemoved', { entity, item });
+      eventBus.emit('itemAdded', { entity, item });
       return true;
     }
     return false;
@@ -30,7 +30,7 @@ export class InventorySystem extends EventEmitter {
   transferItem(fromEntity, toEntity, item) {
     if (this.removeItem(fromEntity, item)) {
       this.addItem(toEntity, item);
-      this.emit('itemTransferred', { from: fromEntity, to: toEntity, item });
+      eventBus.emit('itemRemoved', { entity, item });
       return true;
     }
     return false;

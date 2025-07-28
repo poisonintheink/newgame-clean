@@ -1,11 +1,10 @@
-import { EventEmitter } from '../core/EventEmitter.js';
+import { eventBus } from '../core/EventBus.js';
 
 /**
  * Handles updating registered entities and emits events when they move.
  */
-export class MovementSystem extends EventEmitter {
+export class MovementSystem {
   constructor() {
-    super();
     this.entities = new Set();
     this.lastPositions = new WeakMap();
   }
@@ -38,7 +37,7 @@ export class MovementSystem extends EventEmitter {
 
       const last = this.lastPositions.get(entity) || { x: entity.tileX, y: entity.tileY };
       if (entity.tileX !== last.x || entity.tileY !== last.y) {
-        this.emit('move', { entity, from: last, to: { x: entity.tileX, y: entity.tileY } });
+        eventBus.emit('move', { entity, from: last, to: { x: entity.tileX, y: entity.tileY } });
         this.lastPositions.set(entity, { x: entity.tileX, y: entity.tileY });
       }
     }
