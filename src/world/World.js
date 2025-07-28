@@ -1,5 +1,4 @@
 import * as PIXI from 'pixi.js';
-import { Map } from './Map.js';
 import { Map as TileMap } from './Map.js';
 
 export class World {
