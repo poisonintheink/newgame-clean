@@ -1,5 +1,7 @@
+import { TILE_SIZE } from '../utils/constants.js';
+
 export class Entity {
-  constructor(tileX = 0, tileY = 0, tileSize = 32) {
+  constructor(tileX = 0, tileY = 0, tileSize = TILE_SIZE) {
     this.id = null; // Will be set by EntityRegistry
     this.type = this.constructor.name.toLowerCase(); // 'player', 'enemy', etc.
     this.tileX = tileX;

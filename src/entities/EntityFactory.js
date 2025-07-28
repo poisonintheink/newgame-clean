@@ -2,6 +2,7 @@ import { Player } from './Player.js';
 import { Enemy } from './Enemy.js';
 import enemyData from '../data/enemies.js';
 import itemData from '../data/items.js';
+import { TILE_SIZE } from '../utils/constants.js';
 
 export class EntityFactory {
   static nextId = 1;
@@ -16,7 +17,7 @@ export class EntityFactory {
   /**
    * Create an enemy from template data
    */
-  static createEnemy(type, tileX, tileY, tileSize = 32) {
+  static createEnemy(type, tileX, tileY, tileSize = TILE_SIZE) {
     const template = enemyData[type];
     if (!template) {
       console.error(`Unknown enemy type: ${type}`);
@@ -52,7 +53,7 @@ export class EntityFactory {
   /**
    * Create a player instance
    */
-  static createPlayer(tileX, tileY, tileSize = 32) {
+  static createPlayer(tileX, tileY, tileSize = TILE_SIZE) {
     const player = new Player(tileX, tileY, tileSize);
     player.id = 'player';
     player.name = 'Hero';

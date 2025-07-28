@@ -1,12 +1,32 @@
 import * as PIXI from 'pixi.js';
 import { Map as TileMap } from './Map.js';
+import { Noise } from './Noise.js';
+import { TILE_SIZE } from '../utils/constants.js';
 
 export class World {
-  constructor(width, height, tileSize = 32, renderer = null) {
+  constructor(width, height, tileSize = 32, renderer = null, seed = 1) {
     // World dimensions in tiles
     this.widthInTiles = width;
     this.heightInTiles = height;
     this.tileSize = tileSize;
+
+    this.seed = seed;
+
+    // Noise generators
+    this.elevationNoise = new Noise(seed);
+    this.moistureNoise = new Noise(seed + 1);
+
+    this.heightMap = [];
+    this.moistureMap = [];
+
+    this.seed = seed;
+
+    // Noise generators
+    this.elevationNoise = new Noise(seed);
+    this.moistureNoise = new Noise(seed + 1);
+
+    this.heightMap = [];
+    this.moistureMap = [];
 
     // World dimensions in pixels
     this.width = width * tileSize;
@@ -132,42 +152,41 @@ export class World {
    * Generate the world with placeholder content
    */
   generate() {
+
+    for (let y = 0; y < this.heightInTiles; y++) {
+      this.heightMap[y] = [];
+      this.moistureMap[y] = [];
+      for (let x = 0; x < this.widthInTiles; x++) {
+        const nx = x / this.widthInTiles - 0.5;
+        const ny = y / this.heightInTiles - 0.5;
+        this.heightMap[y][x] = this.elevationNoise.get(nx * 2, ny * 2);
+        this.moistureMap[y][x] = this.moistureNoise.get(nx * 2, ny * 2);
+      }
+    }
+
     for (let y = 0; y < this.heightInTiles; y++) {
       for (let x = 0; x < this.widthInTiles; x++) {
         this.map.setTile(x, y, this.generateTile(x, y));
       }
     }
-
-    // Add some features
-    this.addLake(10, 10, 8, 6);
-    this.addLake(35, 25, 10, 8);
-    this.addForest(20, 30, 15, 10);
-    this.addPath(0, 25, this.widthInTiles, 'horizontal');
-    this.addPath(25, 0, this.heightInTiles, 'vertical');
-    this.addVillageArea(40, 40, 10, 10);
+    // Add rivers for extra realism
+    this.addRivers(3);
   }
 
   /**
    * Generate a single tile based on position
    */
   generateTile(x, y) {
-    const noise = this.simpleNoise(x * 0.1, y * 0.1);
+    const elevation = (this.heightMap[y][x] + 1) / 2;
+    const moisture = (this.moistureMap[y][x] + 1) / 2;
 
-    if (noise < 0.3) return 'grass';
-    if (noise < 0.4) return 'dirt';
-    if (noise < 0.5) return 'grass';
-    if (noise < 0.6) return 'flower';
-    if (noise < 0.7) return 'grass';
-    if (noise < 0.8) return 'stone';
+    if (elevation < 0.3) return 'water';
+    if (elevation < 0.35) return 'sand';
+    if (elevation > 0.8) return 'stone';
+    if (moisture < 0.3) return 'dirt';
+    if (moisture > 0.7) return 'tree';
+    if (moisture > 0.5) return 'flower';
     return 'grass';
-  }
-
-  /**
-   * Simple noise function for terrain generation
-   */
-  simpleNoise(x, y) {
-    const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
-    return n - Math.floor(n);
   }
 
   /**
@@ -261,6 +280,53 @@ export class World {
           }
         }
       }
+    }
+  }
+
+  /**
+   * Generate multiple rivers across the map
+   */
+  addRivers(count = 1) {
+    for (let i = 0; i < count; i++) {
+      const source = this.findRiverSource();
+      if (source) {
+        this.addRiver(source.x, source.y, 40);
+      }
+    }
+  }
+
+  findRiverSource() {
+    for (let i = 0; i < 100; i++) {
+      const x = Math.floor(Math.random() * this.widthInTiles);
+      const y = Math.floor(Math.random() * this.heightInTiles);
+      const elevation = (this.heightMap[y][x] + 1) / 2;
+      if (elevation > 0.6) return { x, y };
+    }
+    return null;
+  }
+
+  addRiver(startX, startY, length = 20) {
+    let x = startX;
+    let y = startY;
+    for (let i = 0; i < length; i++) {
+      if (!this.isValidTile(x, y)) break;
+      this.setTile(x, y, 'water');
+      const neighbors = [
+        { x: x + 1, y },
+        { x: x - 1, y },
+        { x, y: y + 1 },
+        { x, y: y - 1 },
+      ].filter(n => this.isValidTile(n.x, n.y));
+      if (neighbors.length === 0) break;
+      let next = neighbors[0];
+      for (const n of neighbors) {
+        if (this.heightMap[n.y][n.x] < this.heightMap[next.y][next.x]) {
+          next = n;
+        }
+      }
+      if (this.heightMap[next.y][next.x] > this.heightMap[y][x]) break;
+      x = next.x;
+      y = next.y;
     }
   }
 

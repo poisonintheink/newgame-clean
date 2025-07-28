@@ -1,8 +1,9 @@
 import { Entity } from './Entity.js';
 import { KnowledgeBase } from '../systems/KnowledgeSystem.js';
+import { TILE_SIZE } from '../utils/constants.js';
 
 export class Character extends Entity {
-  constructor(tileX = 0, tileY = 0, tileSize = 32) {
+  constructor(tileX = 0, tileY = 0, tileSize = TILE_SIZE) {
     super(tileX, tileY, tileSize);
 
     // Standardize movement properties

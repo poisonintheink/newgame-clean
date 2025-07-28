@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import { State } from '../core/StateManager.js';
 import { Camera } from '../world/Camera.js';
 import { World } from '../world/World.js';
+import { TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT } from '../utils/constants.js';
 import { Player } from '../entities/Player.js';
 import { Enemy } from '../entities/Enemy.js';
 import { UIManager } from '../ui/UIManager.js';
@@ -55,8 +56,8 @@ export class GameplayState extends State {
   async enter(params = {}) {
     const app = this.game.app;
 
-    // Create world (100x100 tiles, 32px per tile = 3200x3200 pixel world)
-    this.world = new World(100, 100, 32, app.renderer);
+    // Create world using shared constants
+    this.world = new World(WORLD_WIDTH, WORLD_HEIGHT, TILE_SIZE, app.renderer);
 
     this.worldContainer.addChild(this.world.container);
 

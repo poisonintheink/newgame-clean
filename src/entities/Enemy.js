@@ -1,17 +1,18 @@
 import * as PIXI from 'pixi.js';
 import { EnemyAI } from '../ai/EnemyAI.js';
 import { Character } from './Character.js';
+import { TILE_SIZE } from '../utils/constants.js';
 
 export class Enemy extends Character {
-  constructor(tileX = 0, tileY = 0, tileSize = 32) {
+  constructor(tileX = 0, tileY = 0, tileSize = TILE_SIZE) {
     super(tileX, tileY, tileSize);
 
     // Enemy-specific properties
     this.moveSpeed = 3; // Slightly slower than player
-    
-    // Visual properties
-    this.width = 20;
-    this.height = 20;
+
+    // Visual properties scaled with tile size
+    this.width = Math.round(tileSize * 0.625);
+    this.height = Math.round(tileSize * 0.625);
     this.color = 0x00ff00;
 
     // PIXI display object

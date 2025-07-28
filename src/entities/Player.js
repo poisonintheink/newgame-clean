@@ -1,17 +1,18 @@
 import * as PIXI from 'pixi.js';
 import { PlayerAI } from '../ai/PlayerAI.js';
 import { Character } from './Character.js';
+import { TILE_SIZE } from '../utils/constants.js';
 
 export class Player extends Character {
-  constructor(tileX = 0, tileY = 0, tileSize = 32) {
+  constructor(tileX = 0, tileY = 0, tileSize = TILE_SIZE) {
     super(tileX, tileY, tileSize);
 
     // Player-specific properties
     this.moveSpeed = 4; // Can override Character default
     
-    // Visual properties
-    this.width = 24;
-    this.height = 24;
+    // Visual properties scaled with tile size
+    this.width = Math.round(tileSize * 0.75);
+    this.height = Math.round(tileSize * 0.75);
     this.color = 0xff0000;
 
     // PIXI display object
