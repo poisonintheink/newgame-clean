@@ -10,13 +10,15 @@ export class EnemyAI extends EntityAI {
   update(deltaTime, world, context = {}) {
     if (!this.enabled) return;
     const player = context.player;
-    if (player) {
-      const dx = player.tileX - this.entity.tileX;
-      const dy = player.tileY - this.entity.tileY;
-      const distSq = dx * dx + dy * dy;
-      if (distSq <= this.awarenessRadius * this.awarenessRadius) {
+    const perception = context.perception;
+    if (player && perception) {
+      const data = perception.perceive(this.entity, world, deltaTime, { targets: [player] });
+      const detected = (data.smell || []).concat(data.vision || []);
+      if (detected.includes(player)) {
         if (!this.entity.moving && this.entity.inputQueue.length === 0) {
           // Flee away from player
+          const dx = player.tileX - this.entity.tileX;
+          const dy = player.tileY - this.entity.tileY;
           let dir;
           if (Math.abs(dx) > Math.abs(dy)) {
             dir = dx > 0 ? 'left' : 'right';

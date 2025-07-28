@@ -5,6 +5,9 @@ import { World } from '../world/World.js';
 import { Player } from '../entities/Player.js';
 import { Enemy } from '../entities/Enemy.js';
 import { UIManager } from '../ui/UIManager.js';
+import { PerceptionSystem } from '../systems/PerceptionSystem.js';
+import { VisionSense } from '../systems/senses/VisionSense.js';
+import { SmellSense } from '../systems/senses/SmellSense.js';
 
 export class GameplayState extends State {
   constructor(game) {
@@ -30,6 +33,9 @@ export class GameplayState extends State {
     // Debug info
     this.debugText = null;
     this.showDebug = true;
+
+    // Perception system
+    this.perception = null;
   }
 
   async enter(params = {}) {
@@ -53,6 +59,11 @@ export class GameplayState extends State {
     // Create enemy at random walkable position
     const enemyPos = this.world.getRandomWalkablePosition();
     this.enemy = new Enemy(enemyPos.tileX, enemyPos.tileY, this.world.tileSize);
+
+    // Set up perception system
+    this.perception = new PerceptionSystem();
+    this.perception.registerSense('vision', new VisionSense());
+    this.perception.registerSense('smell', new SmellSense());
 
     // Camera follows player
     this.camera.follow(this.player, true);
@@ -119,6 +130,7 @@ export class GameplayState extends State {
     this.uiContainer = null;
     this.uiManager = null;
     this.debugText = null;
+    this.perception = null;
   }
 
   setupInput() {
@@ -318,10 +330,16 @@ export class GameplayState extends State {
 
     // Update player and enemy AI
     if (this.enemy) {
-      this.enemy.update(deltaTime, this.world, { player: this.player });
+      this.enemy.update(deltaTime, this.world, {
+        player: this.player,
+        perception: this.perception
+      });
     }
 
-    this.player.update(deltaTime, this.world, { target: this.enemy });
+    this.player.update(deltaTime, this.world, {
+      target: this.enemy,
+      perception: this.perception
+    });
 
     // Update camera
     this.camera.update(deltaTime);
