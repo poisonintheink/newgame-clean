@@ -1,6 +1,6 @@
-export const TILE_SIZE = 16;
-export const WORLD_WIDTH = 144;
-export const WORLD_HEIGHT = 144;
+export const TILE_SIZE = 8;
+export const WORLD_WIDTH = 512;
+export const WORLD_HEIGHT = 512;
 
 export default {
   TILE_SIZE,

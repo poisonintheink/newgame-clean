@@ -19,15 +19,6 @@ export class World {
     this.heightMap = [];
     this.moistureMap = [];
 
-    this.seed = seed;
-
-    // Noise generators
-    this.elevationNoise = new Noise(seed);
-    this.moistureNoise = new Noise(seed + 1);
-
-    this.heightMap = [];
-    this.moistureMap = [];
-
     // World dimensions in pixels
     this.width = width * tileSize;
     this.height = height * tileSize;
