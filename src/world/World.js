@@ -47,11 +47,27 @@ export class World {
       tree: { color: 0x228b22, walkable: false, symbol: 'T' },
       wall: { color: 0x8b4513, walkable: false, symbol: 'W' },
       flower: { color: 0xff69b4, walkable: true, symbol: '*' },
-      sand: { color: 0xf4a460, walkable: true, symbol: 's' }
+      sand: { color: 0xf4a460, walkable: true, symbol: 's' },
+      mountain: { color: 0x888888, walkable: false, symbol: 'M' },
+      snow: { color: 0xffffff, walkable: true, symbol: '^' },
+      swamp: { color: 0x2e8b57, walkable: false, symbol: '%' }
     };
 
+    const {
+      chunkSize = CHUNK_SIZE,
+      loadingRadius = CHUNK_LOADING_RADIUS,
+      elevationFrequency = 2,
+      elevationAmplitude = 1,
+      moistureFrequency = 2,
+      moistureAmplitude = 1,
+    } = options;
+
+    this.elevationFrequency = elevationFrequency;
+    this.elevationAmplitude = elevationAmplitude;
+    this.moistureFrequency = moistureFrequency;
+    this.moistureAmplitude = moistureAmplitude;
+
     // Chunk system for optimization
-    const { chunkSize = CHUNK_SIZE, loadingRadius = CHUNK_LOADING_RADIUS } = options;
     this.chunkSize = chunkSize; // tiles per chunk
     this.loadingRadius = loadingRadius;
     this.widthInChunks = Math.ceil(this.widthInTiles / this.chunkSize);
@@ -152,8 +168,16 @@ export class World {
       for (let x = 0; x < this.widthInTiles; x++) {
         const nx = x / this.widthInTiles - 0.5;
         const ny = y / this.heightInTiles - 0.5;
-        this.heightMap[y][x] = this.elevationNoise.get(nx * 2, ny * 2);
-        this.moistureMap[y][x] = this.moistureNoise.get(nx * 2, ny * 2);
+        this.heightMap[y][x] =
+          this.elevationNoise.get(
+            nx * this.elevationFrequency,
+            ny * this.elevationFrequency
+          ) * this.elevationAmplitude;
+        this.moistureMap[y][x] =
+          this.moistureNoise.get(
+            nx * this.moistureFrequency,
+            ny * this.moistureFrequency
+          ) * this.moistureAmplitude;
       }
     }
 
@@ -170,12 +194,15 @@ export class World {
    * Generate a single tile based on position
    */
   generateTile(x, y) {
-    const elevation = (this.heightMap[y][x] + 1) / 2;
-    const moisture = (this.moistureMap[y][x] + 1) / 2;
+    const elevation = (this.heightMap[y][x] / this.elevationAmplitude + 1) / 2;
+    const moisture = (this.moistureMap[y][x] / this.moistureAmplitude + 1) / 2;
 
     if (elevation < 0.3) return 'water';
     if (elevation < 0.35) return 'sand';
-    if (elevation > 0.8) return 'stone';
+    if (elevation > 0.9) return 'snow';
+    if (elevation > 0.8) return 'mountain';
+    if (elevation > 0.7) return 'stone';
+    if (moisture > 0.8 && elevation < 0.5) return 'swamp';
     if (moisture < 0.3) return 'dirt';
     if (moisture > 0.7) return 'tree';
     if (moisture > 0.5) return 'flower';

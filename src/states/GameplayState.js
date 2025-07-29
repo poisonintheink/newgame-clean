@@ -3,7 +3,7 @@ import * as PIXI from 'pixi.js';
 import { State } from '../core/StateManager.js';
 import { Camera } from '../world/Camera.js';
 import { World } from '../world/World.js';
-import { TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT } from '../utils/constants.js';
+import { TILE_SIZE, WORLD_SETTINGS } from '../utils/constants.js';
 import { Player } from '../entities/Player.js';
 import { Enemy } from '../entities/Enemy.js';
 import { EntityFactory } from '../entities/EntityFactory.js';
@@ -71,8 +71,25 @@ export class GameplayState extends State {
   async enter(params = {}) {
     const app = this.game.app;
 
-    // Create world using shared constants
-    this.world = new World(WORLD_WIDTH, WORLD_HEIGHT, TILE_SIZE, app.renderer);
+    // Create world using configurable settings
+    const {
+      width,
+      height,
+      seed,
+      elevationFrequency,
+      elevationAmplitude,
+      moistureFrequency,
+      moistureAmplitude,
+    } = WORLD_SETTINGS;
+
+    const worldOpts = {
+      elevationFrequency,
+      elevationAmplitude,
+      moistureFrequency,
+      moistureAmplitude,
+    };
+
+    this.world = new World(width, height, TILE_SIZE, app.renderer, seed, worldOpts);
     this.worldContainer.addChild(this.world.container);
 
     // Create camera
