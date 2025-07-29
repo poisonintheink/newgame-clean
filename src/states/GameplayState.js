@@ -567,6 +567,7 @@ export class GameplayState extends State {
         this.isDragging = true;
         this.lastDragPos = e.data.global.clone();
         this.camera.unfollow(); // Stop following player while dragging
+        this.isFollowingPlayer = false;
       }
     });
 
@@ -580,7 +581,11 @@ export class GameplayState extends State {
     });
 
     this.container.on('pointerup', () => {
-      this.isDragging = false;
+      if (this.isDragging) {
+        this.isDragging = false;
+        this.camera.follow(this.player);
+        this.isFollowingPlayer = true;
+      }
     });
   }
 
