@@ -214,9 +214,11 @@ export class Camera extends EventEmitter {
    * @returns {Object} World coordinates
    */
   screenToWorld(screenX, screenY) {
+    const cx = this.viewportWidth / 2;
+    const cy = this.viewportHeight / 2;
     return {
-      x: screenX + this.x,
-      y: screenY + this.y
+      x: (screenX - cx * (1 - this.zoom)) / this.zoom + this.x,
+      y: (screenY - cy * (1 - this.zoom)) / this.zoom + this.y,
     };
   }
 
@@ -227,9 +229,11 @@ export class Camera extends EventEmitter {
    * @returns {Object} Screen coordinates
    */
   worldToScreen(worldX, worldY) {
+    const cx = this.viewportWidth / 2;
+    const cy = this.viewportHeight / 2;
     return {
-      x: worldX - this.x,
-      y: worldY - this.y
+      x: (worldX - this.x) * this.zoom + cx * (1 - this.zoom),
+      y: (worldY - this.y) * this.zoom + cy * (1 - this.zoom),
     };
   }
 
@@ -251,19 +255,33 @@ export class Camera extends EventEmitter {
   }
 
   /**
-   * Get visible world bounds
-   * @returns {Object} Bounds object with left, top, right, bottom
+   * Get visible world bounds.
+   *
+   * The camera is rendered by scaling the world around the center of the
+   * viewport. When zoomed out, the top‑left of the viewport no longer maps
+   * directly to {@link Camera#x}. Instead we need to account for the offset
+   * introduced by scaling around the screen centre.
+   *
+   * @returns {Object} Bounds object with left, top, right and bottom in world
+   * coordinates.
    */
+
   getVisibleBounds() {
-    // When zoomed out, we can see more of the world
+
     const visibleWidth = this.viewportWidth / this.zoom;
     const visibleHeight = this.viewportHeight / this.zoom;
 
+    const cx = this.viewportWidth / 2;
+    const cy = this.viewportHeight / 2;
+
+    const left = this.x - (cx * (1 - this.zoom)) / this.zoom;
+    const top = this.y - (cy * (1 - this.zoom)) / this.zoom;
+
     return {
-      left: this.x,
-      top: this.y,
-      right: this.x + visibleWidth,
-      bottom: this.y + visibleHeight
+      left,
+      top,
+      right: left + visibleWidth,
+      bottom: top + visibleHeight,
     };
   }
 

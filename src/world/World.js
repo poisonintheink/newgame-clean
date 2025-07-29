@@ -465,46 +465,43 @@ export class World {
     const endChunkX = Math.floor(bounds.right / chunkPixelSize) + 1;
     const endChunkY = Math.floor(bounds.bottom / chunkPixelSize) + 1;
 
-    const visStartX = Math.max(0, startChunkX);
-    const visStartY = Math.max(0, startChunkY);
-    const visEndX = Math.min(this.widthInChunks - 1, endChunkX);
-    const visEndY = Math.min(this.heightInChunks - 1, endChunkY);
+    const visStartX = startChunkX;
+    const visStartY = startChunkY;
+    const visEndX = endChunkX;
+    const visEndY = endChunkY;
 
-    const loadStartX = Math.max(0, startChunkX - this.loadingRadius);
-    const loadStartY = Math.max(0, startChunkY - this.loadingRadius);
-    const loadEndX = Math.min(this.widthInChunks - 1, endChunkX + this.loadingRadius);
-    const loadEndY = Math.min(this.heightInChunks - 1, endChunkY + this.loadingRadius);
+    const loadStartX = startChunkX - this.loadingRadius;
+    const loadStartY = startChunkY - this.loadingRadius;
+    const loadEndX = endChunkX + this.loadingRadius;
+    const loadEndY = endChunkY + this.loadingRadius;
 
-    // Unload textures far outside the loading radius
-    for (const [key, tex] of this.chunkTextures) {
-      const [cx, cy] = key.split(',').map(Number);
-      if (cx < loadStartX || cx > loadEndX || cy < loadStartY || cy > loadEndY) {
-        tex.destroy(true);
-        this.chunkTextures.delete(key);
-        const sprite = this.chunkSprites.get(key);
-        if (sprite) {
-          sprite.texture = PIXI.Texture.EMPTY;
-          sprite.visible = false;
-        }
-      }
-    }
+    const loadedKeys = new Set();
 
     for (let cy = loadStartY; cy <= loadEndY; cy++) {
       for (let cx = loadStartX; cx <= loadEndX; cx++) {
-        const key = `${cx},${cy}`;
-        let sprite = this.chunkSprites.get(key);
+        const wrappedX = (cx + this.widthInChunks) % this.widthInChunks;
+        const wrappedY = (cy + this.heightInChunks) % this.heightInChunks;
+        const textureKey = `${wrappedX},${wrappedY}`;
+        loadedKeys.add(textureKey);
+
+        let tex = this.chunkTextures.get(textureKey);
+        if (this.dirtyChunks.has(textureKey) || !tex) {
+          tex = this.createChunkTexture(wrappedX, wrappedY);
+          if (tex) {
+            this.chunkTextures.set(textureKey, tex);
+          }
+          this.dirtyChunks.delete(textureKey);
+        }
+
+        const spriteKey = `${cx},${cy}`;
+        let sprite = this.chunkSprites.get(spriteKey);
         if (!sprite) {
           sprite = new PIXI.Sprite();
           this.tileContainer.addChild(sprite);
-          this.chunkSprites.set(key, sprite);
+          this.chunkSprites.set(spriteKey, sprite);
         }
-        if (this.dirtyChunks.has(key) || !this.chunkTextures.get(key)) {
-          const tex = this.createChunkTexture(cx, cy);
-          if (tex) {
-            this.chunkTextures.set(key, tex);
-            sprite.texture = tex;
-          }
-          this.dirtyChunks.delete(key);
+        if (tex) {
+          sprite.texture = tex;
         }
 
         sprite.x = cx * chunkPixelSize;
@@ -514,6 +511,14 @@ export class World {
           sprite.visible = true;
         }
 
+      }
+    }
+
+    // Unload textures not needed
+    for (const [key, tex] of this.chunkTextures) {
+      if (!loadedKeys.has(key)) {
+        if (tex?.destroy) tex.destroy(true);
+        this.chunkTextures.delete(key);
       }
     }
   }
