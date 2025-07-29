@@ -11,11 +11,11 @@
 | `defeated` | `BattleSystem` | A defender's hit points dropped to 0. Payload: `{ attacker, defender }` |
 | `gameStart` | `Game` | Emitted when the game loop begins. |
 | `stateChanged` | `StateManager` | Fired after changing states. Payload: `name` |
-| `camera:move` | `Camera` | Camera position updated. Payload: `{ x, y }` |
-| `camera:shakeStart` | `Camera` | Shake effect started. |
-| `camera:shakeEnd` | `Camera` | Shake effect ended. |
-| `camera:zoom` | `Camera` | Zoom level changed. Payload: `{ zoom }` |
-| `camera:resize` | `Camera` | Viewport resized. Payload: `{ width, height }` |
+| `move` | `Camera` | Camera position updated. Payload: `{ x, y }` |
+| `shakeStart` | `Camera` | Shake effect started. |
+| `shakeEnd` | `Camera` | Shake effect ended. |
+| `zoom` | `Camera` | Zoom level changed. Payload: `{ zoom }` |
+| `resize` | `Camera` | Viewport resized. Payload: `{ width, height }` |
 
 This list is not exhaustive but covers the most frequently used events.
 Use the bus to publish new events (e.g., `entity.discovered`) so that any
