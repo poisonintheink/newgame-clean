@@ -758,6 +758,13 @@ export class GameplayState extends State {
     this.systems.battle.update(deltaTime);
     this.systems.idle.update(deltaTime);
 
+    // Adjust camera zoom limits based on player perception
+    const perceptionLevel = this.player.stats?.perception || 0;
+    this.camera.minZoom = Math.max(0.1, 0.5 - perceptionLevel * 0.02);
+    if (this.camera.targetZoom < this.camera.minZoom) {
+      this.camera.setZoom(this.camera.minZoom);
+    }
+
     // Update camera
     this.camera.update(deltaTime);
 

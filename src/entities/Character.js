@@ -28,7 +28,8 @@ export class Character extends Entity {
       strength: 10,
       defense: 5,
       agility: 10,
-      intelligence: 10
+      intelligence: 10,
+      perception: 0
     };
 
     // Inventory placeholder (array of item references)

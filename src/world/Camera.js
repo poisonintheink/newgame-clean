@@ -44,6 +44,16 @@ export class Camera extends EventEmitter {
   }
 
   /**
+ * Calculate minimal wrapped delta between two positions
+ */
+  shortestDelta(current, target, max) {
+    const half = max / 2;
+    let diff = ((target - current) % max + max) % max;
+    if (diff > half) diff -= max;
+    return diff;
+  }
+
+  /**
    * Set the target entity for the camera to follow
    * @param {Object} target - Object with x and y properties
    * @param {boolean} instant - Whether to move instantly to target
@@ -150,13 +160,13 @@ export class Camera extends EventEmitter {
     this.targetX = wrap(this.targetX, this.worldWidth);
     this.targetY = wrap(this.targetY, this.worldHeight);
 
-    // Smooth camera movement
-    const dx = this.targetX - this.x;
-    const dy = this.targetY - this.y;
+    // Smooth camera movement using shortest wrapped delta
+    const dx = this.shortestDelta(this.x, this.targetX, this.worldWidth);
+    const dy = this.shortestDelta(this.y, this.targetY, this.worldHeight);
 
     if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
-      this.x += dx * this.smoothing;
-      this.y += dy * this.smoothing;
+      this.x = wrap(this.x + dx * this.smoothing, this.worldWidth);
+      this.y = wrap(this.y + dy * this.smoothing, this.worldHeight);
       this.emit('move', { x: this.x, y: this.y });
     }
 
