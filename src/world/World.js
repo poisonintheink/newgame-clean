@@ -1,10 +1,10 @@
 import * as PIXI from 'pixi.js';
 import { Map as TileMap } from './Map.js';
 import { Noise } from './Noise.js';
-import { TILE_SIZE } from '../utils/constants.js';
+import { TILE_SIZE, CHUNK_SIZE, CHUNK_LOADING_RADIUS } from '../utils/constants.js';
 
 export class World {
-  constructor(width, height, tileSize = 32, renderer = null, seed = 1) {
+  constructor(width, height, tileSize = TILE_SIZE, renderer = null, seed = 1, options = {}) {
     // World dimensions in tiles
     this.widthInTiles = width;
     this.heightInTiles = height;
@@ -51,7 +51,9 @@ export class World {
     };
 
     // Chunk system for optimization
-    this.chunkSize = 16; // tiles per chunk
+    const { chunkSize = CHUNK_SIZE, loadingRadius = CHUNK_LOADING_RADIUS } = options;
+    this.chunkSize = chunkSize; // tiles per chunk
+    this.loadingRadius = loadingRadius;
     this.widthInChunks = Math.ceil(this.widthInTiles / this.chunkSize);
     this.heightInChunks = Math.ceil(this.heightInTiles / this.chunkSize);
     this.visibleChunks = new Set();
@@ -423,10 +425,11 @@ export class World {
    * Render visible chunks based on camera bounds
    */
   renderVisibleChunks(camera) {
-    // Hide all chunk sprites
+    // Hide all chunk sprites initally
     for (const sprite of this.chunkSprites.values()) {
       sprite.visible = false;
     }
+
     const bounds = camera.getVisibleBounds();
     const chunkPixelSize = this.chunkSize * this.tileSize;
 
@@ -440,12 +443,34 @@ export class World {
     const visEndX = Math.min(this.widthInChunks - 1, endChunkX);
     const visEndY = Math.min(this.heightInChunks - 1, endChunkY);
 
-    for (let cy = visStartY; cy <= visEndY; cy++) {
-      for (let cx = visStartX; cx <= visEndX; cx++) {
-        const key = `${cx},${cy}`;
-        const sprite = this.chunkSprites.get(key);
-        if (!sprite) continue;
+    const loadStartX = Math.max(0, startChunkX - this.loadingRadius);
+    const loadStartY = Math.max(0, startChunkY - this.loadingRadius);
+    const loadEndX = Math.min(this.widthInChunks - 1, endChunkX + this.loadingRadius);
+    const loadEndY = Math.min(this.heightInChunks - 1, endChunkY + this.loadingRadius);
 
+    // Unload textures far outside the loading radius
+    for (const [key, tex] of this.chunkTextures) {
+      const [cx, cy] = key.split(',').map(Number);
+      if (cx < loadStartX || cx > loadEndX || cy < loadStartY || cy > loadEndY) {
+        tex.destroy(true);
+        this.chunkTextures.delete(key);
+        const sprite = this.chunkSprites.get(key);
+        if (sprite) {
+          sprite.texture = PIXI.Texture.EMPTY;
+          sprite.visible = false;
+        }
+      }
+    }
+
+    for (let cy = loadStartY; cy <= loadEndY; cy++) {
+      for (let cx = loadStartX; cx <= loadEndX; cx++) {
+        const key = `${cx},${cy}`;
+        let sprite = this.chunkSprites.get(key);
+        if (!sprite) {
+          sprite = new PIXI.Sprite();
+          this.tileContainer.addChild(sprite);
+          this.chunkSprites.set(key, sprite);
+        }
         if (this.dirtyChunks.has(key) || !this.chunkTextures.get(key)) {
           const tex = this.createChunkTexture(cx, cy);
           if (tex) {
@@ -458,7 +483,9 @@ export class World {
         sprite.x = cx * chunkPixelSize;
         sprite.y = cy * chunkPixelSize;
 
-        sprite.visible = true;
+        if (cx >= visStartX && cx <= visEndX && cy >= visStartY && cy <= visEndY) {
+          sprite.visible = true;
+        }
 
       }
     }
